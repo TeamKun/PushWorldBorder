@@ -94,12 +94,5 @@
             <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>net.minecraft.server</groupId>
-            <artifactId>net.minecraft.server</artifactId>
-            <version>v1_15_R1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}\server\cache\patched_1.15.2.jar</systemPath>
-        </dependency>
     </dependencies>
 </project>
