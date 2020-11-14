@@ -2,3 +2,18 @@ name: PushWorldBorder
 version: ${project.version}
 main: com.youtube.propromp.pushworldborder.PushWorldBorder
 api-version: 1.15
+commands:
+  pwb:
+    description: PushWorldBorder by Propromp
+    usage: /pwb help
+    permission: friend.op
+    permission-message: あなたは権限を持っていません。お疲れ様です。
+  permissions:
+    friend.op:
+      default: op
+    friend.player:
+      default: true
+    friend.*:
+      children:
+        friend.player: true
+        friend.op: true
