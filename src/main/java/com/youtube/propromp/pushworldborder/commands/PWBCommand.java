@@ -1,6 +1,6 @@
 package com.youtube.propromp.pushworldborder.commands;
 
-import com.sun.istack.internal.NotNull;
+import com.youtube.propromp.pushworldborder.PushWorldBorder;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,7 +14,7 @@ public class PWBCommand implements CommandExecutor {
             "-------------------------------------";
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
+    public boolean onCommand(CommandSender sender,Command command,String label,String[] args) {
         boolean res = false;
         switch (args[0]){
             case "help":
@@ -34,7 +34,7 @@ public class PWBCommand implements CommandExecutor {
     }
 
     private boolean set(CommandSender sender, Command command, String label, String[] args) {// /pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える
-
+        PushWorldBorder.config.set("speed",Double.valueOf(args[1]));
         return true;
     }
 }
