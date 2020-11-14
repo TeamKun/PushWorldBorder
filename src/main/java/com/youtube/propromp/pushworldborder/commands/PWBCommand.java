@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 
 public class PWBCommand implements CommandExecutor {
     final static String HELPMESSAGE =
-            "----------["+ ChatColor.DARK_PURPLE+"PushWorldBorder"+ChatColor.RESET+"]----------" +
+            "----------["+ ChatColor.DARK_RED +"PushWorldBorder"+ChatColor.RESET+"]----------" +
             "/pwb help:ヘルプ表示" +
             "/pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える" +
             "-------------------------------------";
@@ -34,7 +34,8 @@ public class PWBCommand implements CommandExecutor {
     }
 
     private boolean set(CommandSender sender, Command command, String label, String[] args) {// /pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える
-        PushWorldBorder.config.set("speed",Double.valueOf(args[1]));
+        PushWorldBorder.config.set("config.speed",Double.valueOf(args[1]));
+        sender.sendMessage("["+ ChatColor.DARK_PURPLE+"PushWorldBorder"+ChatColor.RESET+"]ワールドボーダーの軽さを"+args[1]+"に設定しました。");
         return true;
     }
 }

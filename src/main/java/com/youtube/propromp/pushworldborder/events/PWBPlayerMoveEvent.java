@@ -17,7 +17,7 @@ public class PWBPlayerMoveEvent implements Listener {
     public void PlayerMove(PlayerMoveEvent e){
         WorldBorder worldborder = e.getPlayer().getWorld().getWorldBorder();
         if(e.getPlayer().getLocation().distance(worldborder.getCenter()) > worldborder.getSize()/2 + 1.0) {
-            e.getPlayer().getWorld().getWorldBorder().setSize(e.getPlayer().getWorld().getWorldBorder().getSize() + PushWorldBorder.config.getDouble("speed"));
+            e.getPlayer().getWorld().getWorldBorder().setSize(e.getPlayer().getWorld().getWorldBorder().getSize() + PushWorldBorder.config.getDouble("config.speed"));
         }
     }
 }

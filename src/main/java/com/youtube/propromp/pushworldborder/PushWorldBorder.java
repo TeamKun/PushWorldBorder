@@ -27,6 +27,8 @@ public final class PushWorldBorder extends JavaPlugin {
     }
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        saveConfig();
+
+        getLogger().info("Bay!");
     }
 }
