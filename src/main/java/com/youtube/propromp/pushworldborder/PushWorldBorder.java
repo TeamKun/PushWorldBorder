@@ -3,32 +3,31 @@ package com.youtube.propromp.pushworldborder;
 import com.youtube.propromp.pushworldborder.commands.PWBCommand;
 import com.youtube.propromp.pushworldborder.events.PWBPlayerMoveEvent;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Optional;
+import java.util.logging.Logger;
+
 public final class PushWorldBorder extends JavaPlugin {
-    public static FileConfiguration config;
+    public static Plugin plugin;
+    public static Logger logger;
+
+    public static BorderBehaviour behaviour;
+    public static Player leader;
+
     @Override
     public void onEnable() {
-        this.getLogger().info("Hi!");
+        plugin = this;
+        logger = getLogger();
+
+        logger.info("Hi!");
 
         //イベント登録
-        new PWBPlayerMoveEvent(this);
+        getServer().getPluginManager().registerEvents(new PWBPlayerMoveEvent(), this);
 
         //コマンド登録
-        try {
-            this.getCommand("pwb").setExecutor(new PWBCommand());
-        } catch(NullPointerException e){
-            e.printStackTrace();
-        }
-
-        //コンフィグ読み込み
-        saveDefaultConfig();
-        config = getConfig();
-    }
-    @Override
-    public void onDisable() {
-        saveConfig();
-
-        getLogger().info("Bay!");
+        Optional.ofNullable(this.getCommand("pwb")).ifPresent(e -> e.setExecutor(new PWBCommand()));
     }
 }

@@ -1,41 +1,82 @@
 package com.youtube.propromp.pushworldborder.commands;
 
+import com.youtube.propromp.pushworldborder.BorderBehaviour;
 import com.youtube.propromp.pushworldborder.PushWorldBorder;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
-public class PWBCommand implements CommandExecutor {
-    final static String HELPMESSAGE =
-            "----------["+ ChatColor.DARK_RED +"PushWorldBorder"+ChatColor.RESET+"]----------" +
-            "/pwb help:ヘルプ表示" +
-            "/pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える" +
-            "-------------------------------------";
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+public class PWBCommand implements CommandExecutor, TabCompleter {
+    final static String[] HELP_MESSAGE = {
+            "----------[" + ChatColor.DARK_RED + "PushWorldBorder" + ChatColor.RESET + "]----------",
+            "/pwb help: ヘルプ表示",
+            "/pwb type: 挙動を設定",
+            "/pwb leader: リーダーを設定",
+            "-------------------------------------",
+    };
 
     @Override
-    public boolean onCommand(CommandSender sender,Command command,String label,String[] args) {
-        boolean res = false;
-        switch (args[0]){
-            case "help":
-                res = help(sender,command,label,args);// /pwb help:ヘルプ表示
-                break;
-            case "set":
-                res = set(sender,command,label,args);// /pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える
-                break;
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0) {
+            switch (args[0]) {
+                case "help":
+                    // /pwb help:ヘルプ表示
+                    Stream.of(HELP_MESSAGE).forEach(sender::sendMessage);
+                    return true;
+                case "type":
+                    if (args.length <= 1)
+                        return false;
+                    // /pwb type <type>
+                    PushWorldBorder.behaviour = BorderBehaviour.from(args[1]);
+                    sender.sendMessage("[" + ChatColor.DARK_PURPLE + "PushWorldBorder" + ChatColor.RESET + "]種類を" + PushWorldBorder.behaviour + "に設定しました。");
+                    return true;
+                case "leader":
+                    if (args.length <= 1)
+                        return false;
+                    Player player = Bukkit.getPlayer(args[1]);
+                    if (player == null) {
+                        sender.sendMessage("プレイヤーが見つかりません");
+                        return true;
+                    }
+                    PushWorldBorder.leader = player;
+                    sender.sendMessage("[" + ChatColor.DARK_PURPLE + "PushWorldBorder" + ChatColor.RESET + "]リーダーを" + PushWorldBorder.leader.getName() + "に設定しました。");
+                    return true;
+            }
         }
-
-        return res;
+        return false;
     }
 
-    private boolean help(CommandSender sender, Command command, String label, String[] args) {// /pwb help:ヘルプ表示
-        sender.sendMessage(HELPMESSAGE);
-        return true;
-    }
-
-    private boolean set(CommandSender sender, Command command, String label, String[] args) {// /pwb set [number]:1tickごとにワールドボーダーが広がる大きさを変える
-        PushWorldBorder.config.set("config.speed",Double.valueOf(args[1]));
-        sender.sendMessage("["+ ChatColor.DARK_PURPLE+"PushWorldBorder"+ChatColor.RESET+"]ワールドボーダーの軽さを"+args[1]+"に設定しました。");
-        return true;
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        switch (args.length) {
+            case 1:
+                return Stream.of("help", "type", "leader")
+                        .filter(e -> e.startsWith(args[0]))
+                        .collect(Collectors.toList());
+            case 2:
+                switch (args[0]) {
+                    case "type":
+                        return Arrays.stream(BorderBehaviour.values())
+                                .map(e -> e.name().toLowerCase())
+                                .filter(e -> e.startsWith(args[1]))
+                                .collect(Collectors.toList());
+                    case "leader":
+                        return Bukkit.getOnlinePlayers().stream()
+                                .map(Player::getName)
+                                .filter(e -> e.startsWith(args[1]))
+                                .collect(Collectors.toList());
+                }
+        }
+        return Collections.emptyList();
     }
 }

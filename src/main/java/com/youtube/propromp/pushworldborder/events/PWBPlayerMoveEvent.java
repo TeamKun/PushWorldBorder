@@ -1,23 +1,27 @@
 package com.youtube.propromp.pushworldborder.events;
 
-import com.youtube.propromp.pushworldborder.PushWorldBorder;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.WorldBorder;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.util.BoundingBox;
 
 public class PWBPlayerMoveEvent implements Listener {
-
-    public PWBPlayerMoveEvent(Plugin plugin){
-        plugin.getServer().getPluginManager().registerEvents(this,plugin);
-    }
-
     @EventHandler
-    public void PlayerMove(PlayerMoveEvent e){
-        WorldBorder worldborder = e.getPlayer().getWorld().getWorldBorder();
-        if(e.getPlayer().getLocation().distance(worldborder.getCenter()) > worldborder.getSize()/2 + 1.0) {
-            e.getPlayer().getWorld().getWorldBorder().setSize(e.getPlayer().getWorld().getWorldBorder().getSize() + PushWorldBorder.config.getDouble("config.speed"));
+    public void PlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Location location = player.getLocation();
+        World world = player.getWorld();
+        WorldBorder worldborder = world.getWorldBorder();
+
+        double size = worldborder.getSize() / 2 - .85;
+        BoundingBox box = BoundingBox.of(worldborder.getCenter(), size, 0, size);
+        if (!box.contains(location.toVector())) {
+            player.getWorld().getPlayers().forEach(e -> box.union(e.getLocation()));
+            worldborder.setCenter(box.getCenter().toLocation(world));
         }
     }
 }
