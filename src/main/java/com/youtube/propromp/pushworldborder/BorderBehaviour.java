@@ -4,7 +4,7 @@ public enum BorderBehaviour {
     NONE,
     EVERYONE_IN_BORDER,
     ONLY_LEADER,
-    MAJOR,
+    MAJOR_HALF,
     USE_MOVING,
     ;
 

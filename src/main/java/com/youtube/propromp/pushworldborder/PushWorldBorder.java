@@ -14,7 +14,7 @@ public final class PushWorldBorder extends JavaPlugin {
     public static Plugin plugin;
     public static Logger logger;
 
-    public static BorderBehaviour behaviour;
+    public static BorderBehaviour behaviour = BorderBehaviour.NONE;
     public static Player leader;
 
     @Override
