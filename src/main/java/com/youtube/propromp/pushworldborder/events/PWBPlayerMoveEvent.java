@@ -13,11 +13,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,18 +27,85 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PWBPlayerMoveEvent implements Listener {
-    private final WorldBorderApi borderApi = BorderAPI.getApi();
-    private final Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+    private static final WorldBorderApi borderApi = BorderAPI.getApi();
+    private static final Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-    private List<Player> getTeamPlayers(Player player) {
-        return Optional.ofNullable(scoreboard.getEntryTeam(player.getName()))
-                .map(e -> e.getEntries().stream()
-                        .map(Bukkit::getPlayer)
-                        .filter(Objects::nonNull)
-                        .filter(p -> Objects.equals(p.getWorld(), player.getWorld()))
-                        .collect(Collectors.toList())
-                )
-                .orElseGet(() -> new ArrayList<>(player.getWorld().getPlayers()));
+    private static Objective getObjective(String name, String title) {
+        Objective objective = scoreboard.getObjective(name);
+        if (objective == null)
+            objective = scoreboard.registerNewObjective(name, "dummy", title);
+        return objective;
+    }
+
+    private static class TeamBorder {
+        public final Team team;
+        public final List<Player> players;
+        public final Player leader;
+
+        public TeamBorder(Team team, List<Player> players, Player leader) {
+            this.team = team;
+            this.players = players;
+            this.leader = leader;
+        }
+
+        public static Stream<TeamBorder> getTeamBorders() {
+            return scoreboard.getTeams().stream()
+                    .map(team -> {
+                        List<Player> list = getTeamPlayers(team).collect(Collectors.toList());
+                        if (list.isEmpty())
+                            return null;
+                        Player player = getTeamLeader(list.stream())
+                                .findFirst()
+                                .orElseGet(() -> list.get(0));
+                        List<Player> members = list.stream()
+                                .filter(e -> e.getWorld().equals(player.getWorld()))
+                                .collect(Collectors.toList());
+                        return new TeamBorder(team, members, player);
+                    })
+                    .filter(Objects::nonNull);
+        }
+
+        public static Stream<TeamBorder> getNonTeamBorders() {
+            return Bukkit.getWorlds().stream()
+                    .map(world -> {
+                        List<Player> list = getNonTeamPlayers(world).collect(Collectors.toList());
+                        if (list.isEmpty())
+                            return null;
+                        Player player = getTeamLeader(list.stream())
+                                .findFirst()
+                                .orElseGet(() -> list.get(0));
+                        List<Player> members = list.stream()
+                                .filter(e -> e.getWorld().equals(world))
+                                .collect(Collectors.toList());
+                        return new TeamBorder(null, members, player);
+                    })
+                    .filter(Objects::nonNull);
+        }
+
+        public static Stream<Player> getTeamLeader(Stream<Player> stream) {
+            Objective objective = getObjective("teamleader", "チームリーダー");
+            return stream.filter(p -> {
+                Score score = objective.getScore(p.getName());
+                return score.isScoreSet() && score.getScore() > 0;
+            });
+        }
+
+        public static Stream<Player> getSameTeamPlayers(Player player) {
+            return Optional.ofNullable(scoreboard.getEntryTeam(player.getName()))
+                    .map(TeamBorder::getTeamPlayers)
+                    .orElseGet(() -> getNonTeamPlayers(player.getWorld()));
+        }
+
+        public static Stream<Player> getTeamPlayers(Team team) {
+            return team.getEntries().stream()
+                    .map(Bukkit::getPlayer)
+                    .filter(Objects::nonNull);
+        }
+
+        public static Stream<Player> getNonTeamPlayers(World world) {
+            return world.getPlayers().stream()
+                    .filter(e -> scoreboard.getTeam(e.getName()) == null);
+        }
     }
 
     private static Vector toVector(Position position) {
@@ -53,26 +122,35 @@ public class PWBPlayerMoveEvent implements Listener {
             return;
 
         Player player = event.getPlayer();
-        IWorldBorder worldborder = borderApi.getWorldBorder(player);
-        List<Player> members = getTeamPlayers(player);
+        World world = player.getWorld();
+        IWorldBorder worldBorder = borderApi.getWorldBorder(world);
+        IWorldBorder playerBorder = borderApi.getWorldBorder(player);
+
+        Optional<Player> leaderOptional = TeamBorder.getTeamLeader(TeamBorder.getSameTeamPlayers(player)).findFirst();
+        if (!leaderOptional.isPresent())
+            return;
+        Player leader = leaderOptional.get();
 
         Location location = player.getLocation();
         Vector vector = location.toVector();
-        World world = player.getWorld();
 
-        double size = worldborder.getSize() / 2 - .85;
-        BoundingBox box = BoundingBox.of(toVector(worldborder.getCenter()), size, Float.MAX_VALUE, size);
+        double worldBorderSize = worldBorder.getSize();
+        if (worldBorderSize != playerBorder.getSize())
+            borderApi.setBorder(player, worldBorderSize, toVector(worldBorder.getCenter()).toLocation(world));
+
+        double size = playerBorder.getSize() / 2 - .85;
+        BoundingBox box = BoundingBox.of(toVector(playerBorder.getCenter()), size, Float.MAX_VALUE, size);
         if (!box.contains(vector)) {
             switch (PushWorldBorder.behaviour) {
                 case EVERYONE_IN_BORDER: {
                     members.forEach(e -> box.union(e.getLocation()));
-                    worldborder.setCenter(toPosition(box.getCenter()));
+                    borderApi.setBorder(player, worldBorderSize, box.getCenter().toLocation(world));
                 }
                 break;
 
                 case USE_MOVING: {
                     members.forEach(e -> box.union(e.getLocation()));
-                    worldborder.setCenter(toPosition(box.getCenter()));
+                    borderApi.setBorder(player, worldBorderSize, box.getCenter().toLocation(world));
 
                     moveOtherPlayers(Bukkit.getOnlinePlayers().stream().filter(p -> !p.equals(player)), world, size, box, 0);
                 }
@@ -97,7 +175,7 @@ public class PWBPlayerMoveEvent implements Listener {
                             .collect(Collectors.toList());
                     if (pushing.size() > players.size() / 2) {
                         box.union(location);
-                        worldborder.setCenter(toPosition(box.getCenter()));
+                        borderApi.setBorder(player, worldBorderSize, box.getCenter().toLocation(world));
 
                         moveOtherPlayers(players.stream().filter(p -> !pushing.contains(p)), world, size, box, 2);
                     }
@@ -112,7 +190,7 @@ public class PWBPlayerMoveEvent implements Listener {
                     if (!PushWorldBorder.leader.getUniqueId().equals(player.getUniqueId()))
                         return;
                     box.union(location);
-                    worldborder.setCenter(toPosition(box.getCenter()));
+                    borderApi.setBorder(player, worldBorderSize, box.getCenter().toLocation(world));
 
                     moveOtherPlayers(members.stream().filter(p -> !p.equals(player)), world, size, box, 2);
                 }
