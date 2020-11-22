@@ -2,6 +2,8 @@ name: PushWorldBorder
 version: ${project.version}
 main: com.youtube.propromp.pushworldborder.PushWorldBorder
 api-version: 1.15
+depend:
+  - WorldBorderAPI
 commands:
   pwb:
     description: PushWorldBorder by Propromp, Kamesuta
