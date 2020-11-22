@@ -21,6 +21,17 @@ public class VectorUtils {
         return 0;
     }
 
+    public static double lerp(double x, double min, double max) {
+        return min * (1 - x) + max * x;
+    }
+
+    public static Vector lerp(double x, Vector min, Vector max) {
+        double retX = lerp(x, min.getX(), max.getX());
+        double retY = lerp(x, min.getY(), max.getY());
+        double retZ = lerp(x, min.getZ(), max.getZ());
+        return new Vector(retX, retY, retZ);
+    }
+
     private static double clamp(double x, double min, double max) {
         return Math.max(min, Math.min(x, max));
     }

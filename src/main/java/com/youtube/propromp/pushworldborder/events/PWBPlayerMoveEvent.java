@@ -7,25 +7,22 @@ import com.youtube.propromp.pushworldborder.BorderBehaviour;
 import com.youtube.propromp.pushworldborder.PushWorldBorder;
 import com.youtube.propromp.pushworldborder.TeamBorder;
 import com.youtube.propromp.pushworldborder.VectorUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.youtube.propromp.pushworldborder.VectorUtils.toVector;
+
 public class PWBPlayerMoveEvent implements Listener {
-    private static final WorldBorderApi borderApi = BorderAPI.getApi();
-    public static final Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
     @EventHandler
     public void PlayerMove(PlayerMoveEvent event) {
@@ -34,35 +31,35 @@ public class PWBPlayerMoveEvent implements Listener {
 
         Player player = event.getPlayer();
         World world = player.getWorld();
-        IWorldBorder worldBorder = borderApi.getWorldBorder(world);
-        IWorldBorder playerBorder = borderApi.getWorldBorder(player);
 
         List<Player> teamPlayers = TeamBorder.getSameTeamPlayers(player).collect(Collectors.toList());
-        Optional<Player> leaderOptional = TeamBorder.getTeamLeader(teamPlayers.stream()).findFirst();
-        if (!leaderOptional.isPresent())
-            return;
-        Player leader = leaderOptional.get();
+        Player leader = TeamBorder.getTeamLeader(teamPlayers.stream()).findFirst()
+                .orElseGet(() -> teamPlayers.get(0));
 
         Location location = player.getLocation();
         Vector vector = location.toVector();
 
-        double worldBorderSize = worldBorder.getSize();
-        if (worldBorderSize != playerBorder.getSize())
-            teamPlayers.forEach(p -> borderApi.setBorder(p, worldBorderSize, VectorUtils.toVector(worldBorder.getCenter()).toLocation(world)));
+        WorldBorderApi borderApi = BorderAPI.getApi();
 
+        IWorldBorder worldBorder = borderApi.getWorldBorder(world);
+        teamPlayers.stream()
+                .filter(p -> worldBorder.getSize() != borderApi.getWorldBorder(p).getSize())
+                .forEach(p -> borderApi.setBorder(p, worldBorder.getSize(), worldBorder.getCenter()));
+
+        IWorldBorder playerBorder = borderApi.getWorldBorder(leader);
         double size = playerBorder.getSize() / 2 - .85;
-        BoundingBox box = BoundingBox.of(VectorUtils.toVector(playerBorder.getCenter()), size, Float.MAX_VALUE, size);
+        BoundingBox box = BoundingBox.of(toVector(playerBorder.getCenter()), size, Float.MAX_VALUE, size);
         if (!box.contains(vector)) {
             switch (PushWorldBorder.behaviour) {
                 case EVERYONE_IN_BORDER: {
                     teamPlayers.forEach(e -> box.union(e.getLocation()));
-                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorderSize, box.getCenter().toLocation(world)));
+                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorder.getSize(), box.getCenter()));
                 }
                 break;
 
                 case USE_MOVING: {
                     teamPlayers.forEach(e -> box.union(e.getLocation()));
-                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorderSize, box.getCenter().toLocation(world)));
+                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorder.getSize(), box.getCenter()));
 
                     moveOtherPlayers(teamPlayers.stream().filter(p -> !p.equals(player)), world, size, box, 0);
                 }
@@ -86,7 +83,7 @@ public class PWBPlayerMoveEvent implements Listener {
                             .collect(Collectors.toList());
                     if (pushing.size() > teamPlayers.size() / 2) {
                         box.union(location);
-                        teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorderSize, box.getCenter().toLocation(world)));
+                        teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorder.getSize(), box.getCenter()));
 
                         moveOtherPlayers(teamPlayers.stream().filter(p -> !pushing.contains(p)), world, size, box, 2);
                     }
@@ -101,7 +98,7 @@ public class PWBPlayerMoveEvent implements Listener {
                     if (!leader.getUniqueId().equals(player.getUniqueId()))
                         return;
                     box.union(location);
-                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorderSize, box.getCenter().toLocation(world)));
+                    teamPlayers.forEach(e -> borderApi.setBorder(e, worldBorder.getSize(), box.getCenter()));
 
                     moveOtherPlayers(teamPlayers.stream().filter(p -> !p.equals(player)), world, size, box, 2);
                 }

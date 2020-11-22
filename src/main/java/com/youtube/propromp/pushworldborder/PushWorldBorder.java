@@ -2,7 +2,7 @@ package com.youtube.propromp.pushworldborder;
 
 import com.youtube.propromp.pushworldborder.commands.PWBCommand;
 import com.youtube.propromp.pushworldborder.events.PWBPlayerMoveEvent;
-import org.bukkit.configuration.file.FileConfiguration;
+import com.youtube.propromp.pushworldborder.events.PWBTickEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,6 +26,7 @@ public final class PushWorldBorder extends JavaPlugin {
 
         //イベント登録
         getServer().getPluginManager().registerEvents(new PWBPlayerMoveEvent(), this);
+        new PWBTickEvent().runTaskTimer(this, 0, 4);
 
         //コマンド登録
         Optional.ofNullable(this.getCommand("pwb")).ifPresent(e -> e.setExecutor(new PWBCommand()));

@@ -99,9 +99,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.yannicklamprecht.WorldBorderAPI</groupId>
+            <groupId>com.github.TeamKun.WorldBorderAPI</groupId>
             <artifactId>API</artifactId>
-            <version>1.164.0</version>
+            <version>1.165.0</version>
         </dependency>
     </dependencies>
 </project>

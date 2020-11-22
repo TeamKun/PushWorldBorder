@@ -1,11 +1,13 @@
 package com.youtube.propromp.pushworldborder;
 
-import com.youtube.propromp.pushworldborder.events.PWBPlayerMoveEvent;
+import com.github.yannicklamprecht.worldborder.api.BorderAPI;
+import com.github.yannicklamprecht.worldborder.api.WorldBorderApi;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TeamBorder {
+    public static final Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
     public final Team team;
     public final List<Player> players;
     public final Player leader;
@@ -26,7 +29,7 @@ public class TeamBorder {
     }
 
     public static Stream<TeamBorder> getTeamBorders() {
-        return PWBPlayerMoveEvent.scoreboard.getTeams().stream()
+        return scoreboard.getTeams().stream()
                 .map(team -> {
                     List<Player> list = getTeamPlayers(team).collect(Collectors.toList());
                     if (list.isEmpty())
@@ -68,7 +71,7 @@ public class TeamBorder {
     }
 
     public static Stream<Player> getSameTeamPlayers(Player player) {
-        return Optional.ofNullable(PWBPlayerMoveEvent.scoreboard.getEntryTeam(player.getName()))
+        return Optional.ofNullable(scoreboard.getEntryTeam(player.getName()))
                 .map(TeamBorder::getTeamPlayers)
                 .orElseGet(() -> getNonTeamPlayers(player.getWorld()));
     }
@@ -81,13 +84,13 @@ public class TeamBorder {
 
     public static Stream<Player> getNonTeamPlayers(World world) {
         return world.getPlayers().stream()
-                .filter(e -> PWBPlayerMoveEvent.scoreboard.getTeam(e.getName()) == null);
+                .filter(e -> scoreboard.getTeam(e.getName()) == null);
     }
 
     private static Objective getObjective(String name, String title) {
-        Objective objective = PWBPlayerMoveEvent.scoreboard.getObjective(name);
+        Objective objective = scoreboard.getObjective(name);
         if (objective == null)
-            objective = PWBPlayerMoveEvent.scoreboard.registerNewObjective(name, "dummy", title);
+            objective = scoreboard.registerNewObjective(name, "dummy", title);
         return objective;
     }
 }
